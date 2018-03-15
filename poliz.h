@@ -12,13 +12,13 @@ class Poliz {
     string input;
     vector <PolizLex*> lexem; 
 
-    PolizLex* get_next_lexem(int& is_number, vector <Var>&);
 public:
     Poliz(const string& s) {
-        index = 0; input = s;
+        index = 0;
+        input = s;
     }
-    void process_string(vector <Var>&);
-    int execute(vector <Var>&) const;
+    void process_string(vector <Var>&, vector <Label>&, int);
+    int execute(vector <Var>&, int) const;
     void update_var(vector <Var>&, PolizLex*) const;
 };
 #endif

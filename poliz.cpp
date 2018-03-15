@@ -1,79 +1,19 @@
 #include "poliz.h"
+#include "polizlex.cpp"
 #include <stack>
 #include <vector>
 
-using std::stack;
-using std::endl;
-using std::cout;
+using namespace std;
 
-PolizLex* Poliz::get_next_lexem(int& is_number, vector <Var>& vtable) {
-    while (index < input.size() && (input[index] == ' ' || input[index] == '\t'))
-        index++;
-
-    is_number = 0;
-    int value = 0;
-    string var;
-    int var_i = 0;
-    if ((index < input.size()) && ('0' <= input[index]) && (input[index] <= '9')) {
-        is_number = 1;
-        while ((index < input.size()) && ('0' <= input[index]) && (input[index] <= '9')) {
-            value = value * 10 + input[index++] - '0';
-        }
-    }
-    else if ((index < input.size()) && ('a' <= input[index] && input[index] <= 'z' || 'A' <= input[index] && input[index] <= 'Z')) {
-        is_number = 2;
-        while ((index < input.size()) && ('a' <= input[index] && input[index] <= 'z' || 'A' <= input[index] && input[index] <= 'Z')) {
-            var.push_back(input[index++]);
-        }
-        for (int i = 0; i < vtable.size(); i++)
-            if (vtable[i].get_name() == var)
-            {
-                var_i = i;
-                break;
-            }
-		value = vtable[var_i].get_val();
-	}
-    else {
-        while (index < input.size())
-        {
-            int flag = 0;
-            for (int i = 0; i < sizeof(PolizLex::PolizOperatorChar); i++)
-                if(input[index] == PolizLex::PolizOperatorChar[i])
-                {
-                    flag = 1;
-                    break;
-                }
-            if(flag)
-                var.push_back(input[index++]);
-            else
-                break;
-        }
-    }
-
-    if (is_number == 1) {
-        return new Num(value);
-    } else if (is_number == 2) {
-        return new Var(var, value);
-    }
-    
-    for (int i = 0; i < sizeof(PolizLex::PolizOperatorString); i++)
-        if (var == PolizLex::PolizOperatorString[i]) {
-//            if (index == 0 && var[0] == '-' && i == 1 || var.size() > 1 && var[0] == '(' && var[1] == '-')
-//                continue;
-            return new Oper((PolizLex::PolizOperator)i);
-        }
-    return NULL;
-}
-
-void Poliz::process_string(vector <Var>& vtable) {
-    int is_number; // 0 - '+' 1 - 46 2 - "abc"
+void Poliz::process_string(vector <Var>& vtable, vector <Label>& ltable, int ind) {
+    int is_number; // 0 - '+' 1 - 46 2 - "abc" 3 - "L:"
     stack <Oper*> oper_stack;
 
     for (int i = 0; i < input.size(); i++) {
-        PolizLex* ptr = get_next_lexem(is_number, vtable);
+        PolizLex* ptr = get_next_lexem(is_number, vtable, ltable, index, ind, input);
         if (ptr) {
-//            ptr->print();
-//            cout << " \n"[i == input.size() - 1];
+            ptr->print();
+            cout << " \n"[i == input.size() - 1];
             if (is_number) {
                 lexem.push_back(ptr);
             } else {
@@ -100,17 +40,17 @@ void Poliz::process_string(vector <Var>& vtable) {
         lexem.push_back(oper_stack.top());
         oper_stack.pop();
     }
-    /*
     for (int i = 0; i < lexem.size(); i++) {
         if (lexem[i])
             lexem[i]->print();
         cout << " \n"[i == lexem.size() - 1];
     }
-    */
 }
 
-int Poliz::execute(vector <Var> &vtable) const {
+int Poliz::execute(vector <Var> &vtable, int ind) const {
     stack <PolizLex*> tmp;
+    vector <Num> nums(lexem.size());
+    int j = 0;
     for (int i = 0; i < lexem.size(); i++) {
         if (lexem[i]->is_number())
             tmp.push(lexem[i]);
@@ -122,38 +62,38 @@ int Poliz::execute(vector <Var> &vtable) const {
                 tmp.pop();
                 int a = tmp.top()->get_val();
                 tmp.pop();
-                Num c(a + b);
-                tmp.push(&c);
+                nums[j].set_val(a + b);
+                tmp.push(&nums[j++]);
                 break;
             } case PolizLex::MINUS : {
                 int b = tmp.top()->get_val();
                 tmp.pop();
                 int a = tmp.top()->get_val();
                 tmp.pop();
-                Num c(a - b);
-                tmp.push(&c);
+                nums[j].set_val(a - b);
+                tmp.push(&nums[j++]);
                 break;
             } case PolizLex::MULT : {
                 int b = tmp.top()->get_val();
                 tmp.pop();
                 int a = tmp.top()->get_val();
                 tmp.pop();
-                Num c(a * b);
-                tmp.push(&c);
+                nums[j].set_val(a * b);
+                tmp.push(&nums[j++]);
                 break;
             } case PolizLex::DIV : {
                 int b = tmp.top()->get_val();
                 tmp.pop();
                 int a = tmp.top()->get_val();
                 tmp.pop();
-                Num c(a / b);
-                tmp.push(&c);
+                nums[j].set_val(a / b);
+                tmp.push(&nums[j++]);
                 break;
             } case PolizLex::UMINUS : {
                 int b = tmp.top()->get_val();
                 tmp.pop();
-                Num c(-b);
-                tmp.push(&c);
+                nums[j].set_val(-b);
+                tmp.push(&nums[j++]);
                 break;
             } case PolizLex::ASSIGN : {
                 int b = tmp.top()->get_val();
@@ -161,10 +101,10 @@ int Poliz::execute(vector <Var> &vtable) const {
                 PolizLex* p = tmp.top();
                 int a = tmp.top()->get_val();
                 tmp.pop();
-                Num c(b);
+                nums[j].set_val(a);
                 p->set_val(b);
                 update_var(vtable, p);
-                tmp.push(&c);
+                tmp.push(&nums[j++]);
                 break;
             }
         }

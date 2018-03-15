@@ -97,22 +97,22 @@ public:
 };
 
 class Var : public PolizLex {
-	string name;
-	int val;
+    string name;
+    int val;
 public:
-	Var(string s, int value) {
-		Var::name = s;
-		Var::val = value;
-	}
-	string get_name() {
-		return name;
-	}
-	int get_val() {
-		return val;
-	}
-	void set_val(int value) {
-		val = value;
-	}
+    Var(string s, int value) {
+        Var::name = s;
+        Var::val = value;
+    }
+    string get_name() {
+        return name;
+    }
+    int get_val() {
+        return val;
+    }
+    void set_val(int value) {
+        val = value;
+    }
 
     void print() {
         cout << name;
@@ -124,6 +124,37 @@ public:
 
     int is_var() {
         return 1;
+    }
+};
+
+class Label : public PolizLex {
+    string name;
+    int val;
+public:
+    Label(string s, int value) {
+        Label::name = s;
+        Label::val = value;
+    }
+    string get_name() {
+        return name;
+    }
+    int get_val() {
+        return val;
+    }
+    void set_val(int value) {
+        val = value;
+    }
+
+    void print() {
+        cout << name;
+    }
+
+    int is_number() {
+        return 0;
+    }
+
+    int is_var() {
+        return 0;
     }
 };
 
